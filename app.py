@@ -11,7 +11,8 @@ from nltk.stem import WordNetLemmatizer
 import nltk
 import joblib
 import os
-
+import spacy
+import subprocess
 app = Flask(__name__)
 CORS(app)
 
@@ -23,6 +24,11 @@ nltk.download('omw-1.4')
 lemmatizer = WordNetLemmatizer()
 
 # Load SpaCy model
+print("Downloading SpaCy model...")
+spacy.cli.download("en_core_web_sm")
+print("Model downloaded successfully.")
+
+
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner", "tagger", "attribute_ruler"])
 
 # Initialize GPT-2 model
