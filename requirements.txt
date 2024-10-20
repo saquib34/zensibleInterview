@@ -7,3 +7,4 @@ transformers
 nltk
 joblib
 werkzeug
+scikit-learn

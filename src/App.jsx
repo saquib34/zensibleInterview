@@ -8,7 +8,7 @@ const IMDBAnalysisDashboard = () => {
   const [userMood, setUserMood] = useState('');
   const [isCorrect, setIsCorrect] = useState(null);
   const [animateChart, setAnimateChart] = useState(false);
- const url =import.meta.env.VITE_API_URL || 'http://localhost:5000'
+ const Surl =import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
   useEffect(() => {
     // Trigger chart animation after component mount
     setTimeout(() => setAnimateChart(true), 500);
@@ -16,7 +16,7 @@ const IMDBAnalysisDashboard = () => {
 
   const handleAnalyze = async () => {
     try {
-      const response = await fetch('http://localhost:5000/analyze', {
+      const response = await fetch(`${Surl}/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,7 +36,7 @@ const IMDBAnalysisDashboard = () => {
 
   const handleFeedbackSubmit = async () => {
     try {
-      await fetch('http://localhost:5000/feedback', {
+      await fetch(`${Surl}/feedback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
