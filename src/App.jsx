@@ -14,7 +14,7 @@ const IMDBAnalysisDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const Surl = 'http://13.233.91.141:5000' || 'http://127.0.0.1:5000';
+  const Surl = import.meta.env.VITE_API_URL;
   useEffect(() => {
     console.log("Initial effect running");
     setTimeout(() => setAnimateChart(true), 500);
