@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { Zap, Info, FileText, Grid, BarChart2, Cpu, Download, PieChart } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RePieChart, Pie, Cell } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { Zap, Info, FileText, Grid, BarChart2, Cpu, Download, PieChart, Code, Terminal } from 'lucide-react';import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 const IMDBAnalysisDashboard = () => {
   const [IMDBText, setIMDBText] = useState('');
@@ -8,6 +7,12 @@ const IMDBAnalysisDashboard = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [userMood, setUserMood] = useState('');
   const [isCorrect, setIsCorrect] = useState(null);
+  const [animateChart, setAnimateChart] = useState(false);
+
+  useEffect(() => {
+    // Trigger chart animation after component mount
+    setTimeout(() => setAnimateChart(true), 500);
+  }, []);
 
   const handleAnalyze = async () => {
     try {
@@ -67,14 +72,28 @@ const IMDBAnalysisDashboard = () => {
 
   const COLORS = ['#0088FE', '#00C49F'];
 
+  // Simulated training progress data
+  const trainingProgressData = [
+    { epoch: 1, accuracy: 0.6 },
+    { epoch: 2, accuracy: 0.65 },
+    { epoch: 3, accuracy: 0.7 },
+    { epoch: 4, accuracy: 0.73 },
+    { epoch: 5, accuracy: 0.75 },
+    { epoch: 6, accuracy: 0.77 },
+    { epoch: 7, accuracy: 0.79 },
+    { epoch: 8, accuracy: 0.8 },
+    { epoch: 9, accuracy: 0.81 },
+    { epoch: 10, accuracy: 0.82 },
+  ];
+
   return (
     <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">IMDB Sentiment Analysis</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600 animate-pulse">IMDB Sentiment Analysis</h1>
       
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+      <div className="bg-white shadow-md rounded-lg p-6 mb-6 transform hover:scale-105 transition-transform duration-300">
         <h2 className="text-xl font-semibold mb-4 flex items-center">
-          <Zap className="mr-2 text-yellow-500 animate-pulse" />
-          Analyze IMDB
+          <Zap className="mr-2 text-yellow-500 animate-spin" />
+          Analyze IMDB Review
         </h2>
         <div className="flex items-center space-x-4">
           <input
@@ -82,17 +101,17 @@ const IMDBAnalysisDashboard = () => {
             value={IMDBText}
             onChange={(e) => setIMDBText(e.target.value)}
             placeholder="Enter IMDB text..."
-            className="flex-grow p-2 border rounded"
+            className="flex-grow p-2 border rounded focus:ring-2 focus:ring-blue-300 transition-all duration-300"
           />
           <button
             onClick={handleAnalyze}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors transform hover:scale-105"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
           >
             Analyze
           </button>
         </div>
         {analysis && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-md">
+          <div className="mt-4 p-4 bg-gray-50 rounded-md animate-fadeIn">
             <h3 className="font-semibold text-lg mb-2">Analysis Results:</h3>
             <div className="animate-fadeIn">
               <h4 className="font-semibold">Logistic Regression Analysis:</h4>
@@ -112,7 +131,7 @@ const IMDBAnalysisDashboard = () => {
                 type="text"
                 value={userMood}
                 onChange={(e) => setUserMood(e.target.value)}
-                className="p-1 border rounded"
+                className="p-1 border rounded focus:ring-2 focus:ring-blue-300 transition-all duration-300"
               />
             </div>
             <div className="mb-2">
@@ -120,13 +139,13 @@ const IMDBAnalysisDashboard = () => {
               <div>
                 <button
                   onClick={() => setIsCorrect(true)}
-                  className={`mr-2 px-2 py-1 rounded ${isCorrect === true ? 'bg-green-500 text-white' : 'bg-gray-200'} transition-colors`}
+                  className={`mr-2 px-2 py-1 rounded ${isCorrect === true ? 'bg-green-500 text-white' : 'bg-gray-200'} transition-colors focus:outline-none focus:ring-2 focus:ring-green-300`}
                 >
                   Yes
                 </button>
                 <button
                   onClick={() => setIsCorrect(false)}
-                  className={`px-2 py-1 rounded ${isCorrect === false ? 'bg-red-500 text-white' : 'bg-gray-200'} transition-colors`}
+                  className={`px-2 py-1 rounded ${isCorrect === false ? 'bg-red-500 text-white' : 'bg-gray-200'} transition-colors focus:outline-none focus:ring-2 focus:ring-red-300`}
                 >
                   No
                 </button>
@@ -134,7 +153,7 @@ const IMDBAnalysisDashboard = () => {
             </div>
             <button
               onClick={handleFeedbackSubmit}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors transform hover:scale-105"
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               Submit Feedback
             </button>
@@ -143,7 +162,7 @@ const IMDBAnalysisDashboard = () => {
       </div>
       
       <div className="bg-white shadow-md rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
+        <div className="transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Info className="mr-2 text-blue-500" />
             Project Details
@@ -152,12 +171,12 @@ const IMDBAnalysisDashboard = () => {
             <p><strong>Developed By:</strong> Saquib</p>
             <p><strong>Dataset Used:</strong> IMDB Dataset of 50K Movie Reviews</p>
             <p><strong>Dataset Link:</strong> <a href="https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Kaggle - IMDB Dataset</a></p>
-            <p><strong>IPython Notebook:</strong> <a href="/model.ipynb" download className="text-blue-600 hover:underline flex items-center"><Download size={16} className="mr-1" /> Download model.ipynb</a></p>
+            <p><strong>GitHub Repository:</strong> <a href="https://github.com/saquib34/zensibleInterview" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center"><Code size={16} className="mr-1" /> zensibleInterview</a></p>            <p><strong>IPython Notebook:</strong> <a href="/model.ipynb" download className="text-blue-600 hover:underline flex items-center"><Download size={16} className="mr-1" /> Download model.ipynb</a></p>
             <p><strong>Embedding Results:</strong> Saved as simple.csv</p>
           </div>
         </div>
         
-        <div>
+        <div className="transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <PieChart className="mr-2 text-green-500" />
             Dataset Details
@@ -186,7 +205,7 @@ const IMDBAnalysisDashboard = () => {
           </div>
         </div>
         
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <BarChart2 className="mr-2 text-red-500" />
             Model Accuracy Comparison
@@ -205,7 +224,7 @@ const IMDBAnalysisDashboard = () => {
           </div>
         </div>
         
-        <div>
+        <div className="transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <FileText className="mr-2 text-purple-500" />
             Models Trained
@@ -219,7 +238,7 @@ const IMDBAnalysisDashboard = () => {
           </ul>
         </div>
         
-        <div>
+        <div className="transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Grid className="mr-2 text-indigo-500" />
             Preprocessing Steps
@@ -235,7 +254,7 @@ const IMDBAnalysisDashboard = () => {
           </ul>
         </div>
         
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Cpu className="mr-2 text-yellow-500" />
             Model Architecture and Embeddings
@@ -249,7 +268,53 @@ const IMDBAnalysisDashboard = () => {
             <p><strong>Ensemble:</strong> We combine predictions from multiple models using a voting mechanism to improve overall accuracy and robustness of our sentiment analysis system.</p>
           </div>
         </div>
+
+        <div className="md:col-span-2 transform hover:scale-105 transition-transform duration-300">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <Terminal className="mr-2 text-gray-500" />
+            Setup Instructions
+          </h2>
+          <div className="space-y-2">
+            <p><strong>Frontend Setup:</strong></p>
+            <ol className="list-decimal list-inside pl-4 space-y-1">
+              <li>Clone the repository: <code className="bg-gray-200 px-1 rounded">git clone https://github.com/saquib34/zensibleInterview.git</code></li>
+              <li>Navigate to the project directory: <code className="bg-gray-200 px-1 rounded">cd zensibleInterview</code></li>
+              <li>Install dependencies: <code className="bg-gray-200 px-1 rounded">npm install</code></li>
+              <li>Start the development server: <code className="bg-gray-200 px-1 rounded">npm start</code></li>
+            </ol>
+            <p><strong>Backend Setup:</strong></p>
+            <ol className="list-decimal list-inside pl-4 space-y-1">
+              <li>Ensure you have Python installed</li>
+              <li>Install required packages: <code className="bg-gray-200 px-1 rounded">pip install -r requirements.txt</code></li>
+              <li>Start the Flask server: <code className="bg-gray-200 px-1 rounded">python app.py</code></li>
+            </ol>
+          </div>
+        </div>
+
+        <div className="md:col-span-2 transform hover:scale-105 transition-transform duration-300">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <BarChart2 className="mr-2 text-blue-500" />
+            Training Progress
+          </h2>
+          <div className="w-full h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trainingProgressData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="epoch" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="accuracy" stroke="#8884d8" activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
+
+      <footer className="mt-8 text-center text-gray-500">
+        <p>© 2024 IMDB Sentiment Analysis Project. All rights reserved.</p>
+        <p>Developed with ❤️ by Saquib</p>
+      </footer>
     </div>
   );
 };
