@@ -8,7 +8,7 @@ const IMDBAnalysisDashboard = () => {
   const [userMood, setUserMood] = useState('');
   const [isCorrect, setIsCorrect] = useState(null);
   const [animateChart, setAnimateChart] = useState(false);
- const Surl =import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
+ const Surl ='http://13.233.91.141:5000' || 'http://127.0.0.1:5000'
   useEffect(() => {
     // Trigger chart animation after component mount
     setTimeout(() => setAnimateChart(true), 500);

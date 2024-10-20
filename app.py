@@ -11,25 +11,26 @@ from nltk.stem import WordNetLemmatizer
 import nltk
 import joblib
 import os
-import spacy
-import subprocess
+import logging
+
 app = Flask(__name__)
 CORS(app)
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Download necessary NLTK data
-nltk.download('wordnet')
-nltk.download('omw-1.4')
+nltk.download('wordnet', quiet=True)
+nltk.download('omw-1.4', quiet=True)
 
 # Initialize lemmatizer
 lemmatizer = WordNetLemmatizer()
 
 # Load SpaCy model
-print("Downloading SpaCy model...")
-spacy.cli.download("en_core_web_sm")
-print("Model downloaded successfully.")
-
-
+print("Loading SpaCy model...")
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner", "tagger", "attribute_ruler"])
+print("Model loaded successfully.")
 
 # Initialize GPT-2 model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -47,8 +48,7 @@ def remove_tags(text):
     return re.sub('<[^<]+?>', '', text)
 
 def remove_special_characters(text):
-    return re.sub(r'[^a-zA-Z0-9\s]', '', text)  # Note the 'r' prefix for raw string
-
+    return re.sub(r'[^a-zA-Z0-9\s]', '', text)
 
 def remove_extra_spaces(text):
     return re.sub(' +', ' ', text)
@@ -70,7 +70,17 @@ def lemmatize_spacy(text):
     return " ".join([token.lemma_ for token in doc])
 
 def get_embeddings(text):
+    if not text.strip():
+        logger.warning("Empty input provided to get_embeddings")
+        return None
+    
+    logger.info(f"Generating embeddings for text: {text[:50]}...")
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128).to(device)
+    
+    if inputs['input_ids'].numel() == 0:
+        logger.warning("Tokenization resulted in empty input")
+        return None
+    
     with torch.no_grad():
         outputs = gpt2_model(**inputs)
     last_hidden_state = outputs.last_hidden_state
@@ -100,6 +110,17 @@ def analyze_sentiment():
     data = request.json
     tweet_text = data.get('tweet', '')
     
+    logger.info(f"Received tweet: {tweet_text}")
+    
+    if not tweet_text.strip():
+        logger.warning("Empty input provided")
+        return jsonify({
+            'error': 'Empty input provided',
+            'logistic_sentiment': 'Unknown',
+            'logistic_confidence': 0,
+            'processed_text': '',
+        }), 400
+    
     # Apply text preprocessing steps
     processed_text = tweet_text
     processed_text = remove_tags(processed_text)
@@ -111,26 +132,34 @@ def analyze_sentiment():
     processed_text = lemmatize(processed_text)
     processed_text = lemmatize_spacy(processed_text)
     
+    logger.info(f"Processed text: {processed_text}")
+    
     # Get embeddings
     embeddings = get_embeddings(processed_text)
     
-    # Perform TextBlob sentiment analysis (for backend use only)
-    textblob_analysis = TextBlob(processed_text)
-    if textblob_analysis.sentiment.polarity > 0:
-        textblob_sentiment = "Positive"
-    elif textblob_analysis.sentiment.polarity < 0:
-        textblob_sentiment = "Negative"
-    else:
-        textblob_sentiment = "Neutral"
-    textblob_confidence = abs(textblob_analysis.sentiment.polarity)
+    if embeddings is None:
+        logger.error("Failed to generate embeddings")
+        return jsonify({
+            'error': 'Failed to generate embeddings',
+            'logistic_sentiment': 'Unknown',
+            'logistic_confidence': 0,
+            'processed_text': processed_text,
+        }), 500
     
     # Perform logistic regression sentiment analysis
-    logistic_prediction = logistic_model.predict([embeddings])[0]
-    logistic_probabilities = logistic_model.predict_proba([embeddings])[0]
-    logistic_sentiment = "Positive" if logistic_prediction == 1 else "Negative"
-    logistic_confidence = logistic_probabilities[1] if logistic_prediction == 1 else logistic_probabilities[0]
-    
-    # Store TextBlob results in the database or log them as needed
+    try:
+        logistic_prediction = logistic_model.predict([embeddings])[0]
+        logistic_probabilities = logistic_model.predict_proba([embeddings])[0]
+        logistic_sentiment = "Positive" if logistic_prediction == 1 else "Negative"
+        logistic_confidence = logistic_probabilities[1] if logistic_prediction == 1 else logistic_probabilities[0]
+    except Exception as e:
+        logger.error(f"Error in logistic regression prediction: {str(e)}")
+        return jsonify({
+            'error': 'Error in sentiment prediction',
+            'logistic_sentiment': 'Unknown',
+            'logistic_confidence': 0,
+            'processed_text': processed_text,
+        }), 500
     
     return jsonify({
         'logistic_sentiment': logistic_sentiment,
@@ -156,16 +185,19 @@ def save_feedback():
     else:
         textblob_sentiment = "Neutral"
     
-    conn = sqlite3.connect('feedback.db')
-    c = conn.cursor()
-    c.execute('''INSERT INTO feedback (tweet, processed_tweet, textblob_sentiment, logistic_sentiment, user_mood, is_correct, timestamp)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)''',
-              (tweet, processed_tweet, textblob_sentiment, logistic_sentiment, user_mood, is_correct, datetime.now()))
-    conn.commit()
-    conn.close()
-    
-    return jsonify({"message": "Feedback saved successfully"}), 200
+    try:
+        conn = sqlite3.connect('feedback.db')
+        c = conn.cursor()
+        c.execute('''INSERT INTO feedback (tweet, processed_tweet, textblob_sentiment, logistic_sentiment, user_mood, is_correct, timestamp)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                  (tweet, processed_tweet, textblob_sentiment, logistic_sentiment, user_mood, is_correct, datetime.now()))
+        conn.commit()
+        conn.close()
+        logger.info("Feedback saved successfully")
+        return jsonify({"message": "Feedback saved successfully"}), 200
+    except Exception as e:
+        logger.error(f"Error saving feedback: {str(e)}")
+        return jsonify({"error": "Failed to save feedback"}), 500
 
 if __name__ == '__main__':
-
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
