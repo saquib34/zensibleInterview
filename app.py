@@ -151,7 +151,7 @@ def analyze_sentiment():
     try:
         logistic_prediction = logistic_model.predict([embeddings])[0]
         logistic_probabilities = logistic_model.predict_proba([embeddings])[0]
-        logistic_sentiment = "Positive" if logistic_prediction == 1 else "Negative"
+        logistic_sentiment = "Negative" if logistic_prediction == 1 else "Positive"  #changing the sentiment to positive and negative
         logistic_confidence = logistic_probabilities[1] if logistic_prediction == 1 else logistic_probabilities[0]
     except Exception as e:
         logger.error(f"Error in logistic regression prediction: {str(e)}")
@@ -164,7 +164,7 @@ def analyze_sentiment():
     
     return jsonify({
         'logistic_sentiment': logistic_sentiment,
-        'logistic_confidence': round(logistic_confidence, 2),
+        # 'logistic_confidence': round(logistic_confidence, 2),
         'processed_text': processed_text,
     })
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Zap, Info, FileText, Grid, BarChart2, Cpu, Download, PieChart, Code, Terminal } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, LineChart, Line } from 'recharts';
-
 const IMDBAnalysisDashboard = () => {
   console.log("IMDBAnalysisDashboard rendering started");
 
@@ -13,8 +12,9 @@ const IMDBAnalysisDashboard = () => {
   const [animateChart, setAnimateChart] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const Surl = 'http://13.233.91.141:5000';
 
-  const Surl = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     console.log("Initial effect running");
     setTimeout(() => setAnimateChart(true), 500);
@@ -31,6 +31,7 @@ const IMDBAnalysisDashboard = () => {
     setError(null);
 
     try {
+
       const response = await fetch(`${Surl}/analyze`, {
         method: 'POST',
         headers: {
@@ -163,7 +164,9 @@ const IMDBAnalysisDashboard = () => {
             <div className="animate-fadeIn">
               <h4 className="font-semibold">Logistic Regression Analysis:</h4>
               <p>Sentiment: <span className="text-green-600">{analysis.logistic_sentiment}</span></p>
-              <p>Confidence: <span className="text-purple-600">{analysis.logistic_confidence}</span></p>
+              {/* <p>Confidence: <span className="text-purple-600">{analysis.logistic_confidence}</span></p> */}
+              <p>
+                Processed Text: <span className="text-gray-600">{analysis.processed_text}</span></p>
             </div>
           </div>
         )}
