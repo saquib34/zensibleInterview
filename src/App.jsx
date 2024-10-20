@@ -165,8 +165,6 @@ const IMDBAnalysisDashboard = () => {
               <p>Sentiment: <span className="text-green-600">{analysis.logistic_sentiment}</span></p>
               <p>Confidence: <span className="text-purple-600">{analysis.logistic_confidence}</span></p>
             </div>
-            <p className="font-semibold mt-2">Processed Text:</p>
-            <p className="text-sm text-gray-600">{analysis.processed_text}</p>
           </div>
         )}
         {showFeedback && (
