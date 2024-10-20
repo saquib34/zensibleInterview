@@ -47,7 +47,8 @@ def remove_tags(text):
     return re.sub('<[^<]+?>', '', text)
 
 def remove_special_characters(text):
-    return re.sub('[^a-zA-Z0-9\s]', '', text)
+    return re.sub(r'[^a-zA-Z0-9\s]', '', text)  # Note the 'r' prefix for raw string
+
 
 def remove_extra_spaces(text):
     return re.sub(' +', ' ', text)
