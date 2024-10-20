@@ -108,7 +108,8 @@ init_db()
 @app.route('/analyze', methods=['POST'])
 def analyze_sentiment():
     data = request.json
-    tweet_text = data.get('tweet', '')
+    print("Received data:", data)  # Add this line for debugging
+    tweet_text = data.get('IMDB', '').strip()
     
     logger.info(f"Received tweet: {tweet_text}")
     

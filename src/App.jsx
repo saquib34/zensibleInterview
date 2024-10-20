@@ -1,20 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Zap, Info, FileText, Grid, BarChart2, Cpu, Download, PieChart, Code, Terminal } from 'lucide-react';import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Zap, Info, FileText, Grid, BarChart2, Cpu, Download, PieChart, Code, Terminal } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 const IMDBAnalysisDashboard = () => {
+  console.log("IMDBAnalysisDashboard rendering started");
+
   const [IMDBText, setIMDBText] = useState('');
   const [analysis, setAnalysis] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [userMood, setUserMood] = useState('');
   const [isCorrect, setIsCorrect] = useState(null);
   const [animateChart, setAnimateChart] = useState(false);
- const Surl ='http://13.233.91.141:5000' || 'http://127.0.0.1:5000'
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const Surl = 'http://13.233.91.141:5000' || 'http://127.0.0.1:5000';
   useEffect(() => {
-    // Trigger chart animation after component mount
+    console.log("Initial effect running");
     setTimeout(() => setAnimateChart(true), 500);
   }, []);
 
   const handleAnalyze = async () => {
+    console.log("handleAnalyze called");
+    if (IMDBText.trim().length < 10) {
+      setError("Please enter a longer review (at least 10 characters).");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
     try {
       const response = await fetch(`${Surl}/analyze`, {
         method: 'POST',
@@ -24,56 +39,68 @@ const IMDBAnalysisDashboard = () => {
         body: JSON.stringify({ IMDB: IMDBText }),
       });
       const data = await response.json();
-      setAnalysis(data);
-      
-      setTimeout(() => {
-        setShowFeedback(true);
-      }, 5000);
+      if (response.ok) {
+        setAnalysis(data);
+        setTimeout(() => {
+          setShowFeedback(true);
+        }, 5000);
+      } else {
+        setError(data.error || "An error occurred while analyzing the text.");
+      }
     } catch (error) {
       console.error('Error analyzing IMDB:', error);
+      setError("An error occurred while connecting to the server.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleFeedbackSubmit = async () => {
+    console.log("handleFeedbackSubmit called");
     try {
-      await fetch(`${Surl}/feedback`, {
+      const response = await fetch(`${Surl}/feedback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           IMDB: IMDBText,
-          processed_IMDB: analysis.processed_text,
-          logistic_sentiment: analysis.logistic_sentiment,
+          processed_IMDB: analysis?.processed_text,
+          logistic_sentiment: analysis?.logistic_sentiment,
           user_mood: userMood,
           is_correct: isCorrect,
         }),
       });
-      setShowFeedback(false);
-      setUserMood('');
-      setIsCorrect(null);
+      if (response.ok) {
+        setShowFeedback(false);
+        setUserMood('');
+        setIsCorrect(null);
+      } else {
+        const data = await response.json();
+        setError(data.error || "An error occurred while submitting feedback.");
+      }
     } catch (error) {
       console.error('Error submitting feedback:', error);
+      setError("An error occurred while connecting to the server.");
     }
   };
 
-  const accuracyData = [
+  const accuracyData = useMemo(() => [
     { name: 'Gaussian NB', accuracy: 0.7379 },
     { name: 'Random Forest', accuracy: 0.7997 },
     { name: 'Logistic Regression', accuracy: 0.82 },
     { name: 'LSTM', accuracy: 0.7424 },
     { name: 'Transformer', accuracy: 0.5 },
-  ];
+  ], []);
 
-  const datasetData = [
+  const datasetData = useMemo(() => [
     { name: 'Positive', value: 25000 },
     { name: 'Negative', value: 25000 },
-  ];
+  ], []);
 
   const COLORS = ['#0088FE', '#00C49F'];
 
-  // Simulated training progress data
-  const trainingProgressData = [
+  const trainingProgressData = useMemo(() => [
     { epoch: 1, accuracy: 0.6 },
     { epoch: 2, accuracy: 0.65 },
     { epoch: 3, accuracy: 0.7 },
@@ -84,7 +111,22 @@ const IMDBAnalysisDashboard = () => {
     { epoch: 8, accuracy: 0.8 },
     { epoch: 9, accuracy: 0.81 },
     { epoch: 10, accuracy: 0.82 },
-  ];
+  ], []);
+
+  const MemoizedBarChart = useMemo(() => (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={accuracyData}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="name" />
+        <YAxis />
+        <Tooltip />
+        <Legend />
+        <Bar dataKey="accuracy" fill="#8884d8" />
+      </BarChart>
+    </ResponsiveContainer>
+  ), [accuracyData]);
+
+  console.log("About to return JSX");
 
   return (
     <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
@@ -101,15 +143,20 @@ const IMDBAnalysisDashboard = () => {
             value={IMDBText}
             onChange={(e) => setIMDBText(e.target.value)}
             placeholder="Enter IMDB text..."
+            aria-label="IMDB review text"
             className="flex-grow p-2 border rounded focus:ring-2 focus:ring-blue-300 transition-all duration-300"
           />
           <button
             onClick={handleAnalyze}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            disabled={isLoading}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50"
           >
-            Analyze
+            {isLoading ? 'Analyzing...' : 'Analyze'}
           </button>
         </div>
+        {error && (
+          <p className="text-red-500 mt-2">{error}</p>
+        )}
         {analysis && (
           <div className="mt-4 p-4 bg-gray-50 rounded-md animate-fadeIn">
             <h3 className="font-semibold text-lg mb-2">Analysis Results:</h3>
@@ -162,6 +209,7 @@ const IMDBAnalysisDashboard = () => {
       </div>
       
       <div className="bg-white shadow-md rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Project Details */}
         <div className="transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Info className="mr-2 text-blue-500" />
@@ -171,11 +219,13 @@ const IMDBAnalysisDashboard = () => {
             <p><strong>Developed By:</strong> Saquib</p>
             <p><strong>Dataset Used:</strong> IMDB Dataset of 50K Movie Reviews</p>
             <p><strong>Dataset Link:</strong> <a href="https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Kaggle - IMDB Dataset</a></p>
-            <p><strong>GitHub Repository:</strong> <a href="https://github.com/saquib34/zensibleInterview" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center"><Code size={16} className="mr-1" /> zensibleInterview</a></p>            <p><strong>IPython Notebook:</strong> <a href="/model.ipynb" download className="text-blue-600 hover:underline flex items-center"><Download size={16} className="mr-1" /> Download model.ipynb</a></p>
+            <p><strong>GitHub Repository:</strong> <a href="https://github.com/saquib34/zensibleInterview" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center"><Code size={16} className="mr-1" /> zensibleInterview</a></p>
+            <p><strong>IPython Notebook:</strong> <a href="/model.ipynb" download className="text-blue-600 hover:underline flex items-center"><Download size={16} className="mr-1" /> Download model.ipynb</a></p>
             <p><strong>Embedding Results:</strong> Saved as simple.csv</p>
           </div>
         </div>
         
+        {/* Dataset Details */}
         <div className="transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <PieChart className="mr-2 text-green-500" />
@@ -205,25 +255,18 @@ const IMDBAnalysisDashboard = () => {
           </div>
         </div>
         
+        {/* Model Accuracy Comparison */}
         <div className="md:col-span-2 transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <BarChart2 className="mr-2 text-red-500" />
             Model Accuracy Comparison
           </h2>
           <div className="w-full h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={accuracyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="accuracy" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
+            {MemoizedBarChart}
           </div>
         </div>
         
+        {/* Models Trained */}
         <div className="transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <FileText className="mr-2 text-purple-500" />
@@ -238,6 +281,7 @@ const IMDBAnalysisDashboard = () => {
           </ul>
         </div>
         
+        {/* Preprocessing Steps */}
         <div className="transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Grid className="mr-2 text-indigo-500" />
@@ -254,13 +298,14 @@ const IMDBAnalysisDashboard = () => {
           </ul>
         </div>
         
+        {/* Model Architecture and Embeddings */}
         <div className="md:col-span-2 transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Cpu className="mr-2 text-yellow-500" />
             Model Architecture and Embeddings
           </h2>
           <div className="space-y-2">
-            <p><strong>Word Embeddings:</strong> We use pre-trained GloVe (Global Vectors for Word Representation) embeddings to convert words into dense vector representations.</p>
+          <p><strong>Word Embeddings:</strong> We use pre-trained GloVe (Global Vectors for Word Representation) embeddings to convert words into dense vector representations.</p>
             <p><strong>Sentence Embeddings:</strong> For the Transformer model, we utilize BERT (Bidirectional Encoder Representations from Transformers) to generate contextual embeddings for entire sentences.</p>
             <p><strong>TF-IDF Vectorization:</strong> For traditional machine learning models (Naive Bayes, Random Forest, Logistic Regression), we employ TF-IDF (Term Frequency-Inverse Document Frequency) vectorization to convert text into numerical features.</p>
             <p><strong>LSTM:</strong> Our LSTM model consists of an embedding layer, followed by LSTM layers, and dense layers for classification. This architecture is particularly effective for capturing long-term dependencies in text.</p>
@@ -269,6 +314,7 @@ const IMDBAnalysisDashboard = () => {
           </div>
         </div>
 
+        {/* Setup Instructions */}
         <div className="md:col-span-2 transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Terminal className="mr-2 text-gray-500" />
@@ -291,6 +337,7 @@ const IMDBAnalysisDashboard = () => {
           </div>
         </div>
 
+        {/* Training Progress */}
         <div className="md:col-span-2 transform hover:scale-105 transition-transform duration-300">
           <h2 className="text-xl font-semibold mb-4 flex items-center">
             <BarChart2 className="mr-2 text-blue-500" />
