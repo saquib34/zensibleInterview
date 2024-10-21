@@ -12,7 +12,7 @@ const IMDBAnalysisDashboard = () => {
   const [animateChart, setAnimateChart] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const Surl = 'https://zensible.shadmanshahin6.workers.dev';
+  const Surl = 'https://jtflvprri3.execute-api.ap-south-1.amazonaws.com/prod';
 
 
   useEffect(() => {
