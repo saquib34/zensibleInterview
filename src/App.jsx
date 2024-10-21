@@ -12,7 +12,7 @@ const IMDBAnalysisDashboard = () => {
   const [animateChart, setAnimateChart] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const Surl = 'https://d30k3bvwkg3jcb.cloudfront.net';
+  const Surl = 'https://k7j699ws7c.execute-api.ap-south-1.amazonaws.com/prod';
 
 
   useEffect(() => {
