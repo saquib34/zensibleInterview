@@ -12,6 +12,7 @@ import nltk
 import joblib
 import os
 import logging
+from flask_talisman import Talisman
 
 app = Flask(__name__)
 CORS(app)
@@ -42,6 +43,9 @@ gpt2_model.eval()
 # Load logistic regression model
 model_filename = 'logistic_regression_model.joblib'
 logistic_model = joblib.load(model_filename)
+
+# Initialize Flask-Talisman for security (HTTPS enforcement)
+Talisman(app)
 
 # Text preprocessing functions
 def remove_tags(text):
@@ -89,31 +93,30 @@ def get_embeddings(text):
 
 # Initialize SQLite database
 def init_db():
-    conn = sqlite3.connect('feedback.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS feedback
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  tweet TEXT,
-                  processed_tweet TEXT,
-                  textblob_sentiment TEXT,
-                  logistic_sentiment TEXT,
-                  user_mood TEXT,
-                  is_correct BOOLEAN,
-                  timestamp DATETIME)''')
-    conn.commit()
-    conn.close()
+    with sqlite3.connect('feedback.db') as conn:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS feedback
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      tweet TEXT,
+                      processed_tweet TEXT,
+                      textblob_sentiment TEXT,
+                      logistic_sentiment TEXT,
+                      user_mood TEXT,
+                      is_correct BOOLEAN,
+                      timestamp DATETIME)''')
+        conn.commit()
 
 init_db()
 
 @app.route('/analyze', methods=['POST'])
 def analyze_sentiment():
     data = request.json
-    print("Received data:", data)  # Add this line for debugging
+    logger.info("Received data: %s", data)  # Better logging of received data
     tweet_text = data.get('IMDB', '').strip()
     
     logger.info(f"Received tweet: {tweet_text}")
     
-    if not tweet_text.strip():
+    if not tweet_text:
         logger.warning("Empty input provided")
         return jsonify({
             'error': 'Empty input provided',
@@ -151,7 +154,7 @@ def analyze_sentiment():
     try:
         logistic_prediction = logistic_model.predict([embeddings])[0]
         logistic_probabilities = logistic_model.predict_proba([embeddings])[0]
-        logistic_sentiment = "Negative" if logistic_prediction == 1 else "Positive"  #changing the sentiment to positive and negative
+        logistic_sentiment = "Negative" if logistic_prediction == 1 else "Positive"
         logistic_confidence = logistic_probabilities[1] if logistic_prediction == 1 else logistic_probabilities[0]
     except Exception as e:
         logger.error(f"Error in logistic regression prediction: {str(e)}")
@@ -164,7 +167,7 @@ def analyze_sentiment():
     
     return jsonify({
         'logistic_sentiment': logistic_sentiment,
-        # 'logistic_confidence': round(logistic_confidence, 2),
+        'logistic_confidence': round(logistic_confidence, 2),
         'processed_text': processed_text,
     })
 
@@ -187,15 +190,13 @@ def save_feedback():
         textblob_sentiment = "Neutral"
     
     try:
-        conn = sqlite3.connect('feedback.db')
-        c = conn.cursor()
-        c.execute('''INSERT INTO feedback (tweet, processed_tweet, textblob_sentiment, logistic_sentiment, user_mood, is_correct, timestamp)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                  (tweet, processed_tweet, textblob_sentiment, logistic_sentiment, user_mood, is_correct, datetime.now()))
-        conn.commit()
-        conn.close()
-        logger.info("Feedback saved successfully")
-        return jsonify({"message": "Feedback saved successfully"}), 200
+        with sqlite3.connect('feedback.db') as conn:
+            c = conn.cursor()
+            c.execute('''INSERT INTO feedback (tweet, processed_tweet, textblob_sentiment, logistic_sentiment, user_mood, is_correct, timestamp)
+                         VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                      (tweet, processed_tweet, textblob_sentiment, logistic_sentiment, user_mood, is_correct, datetime.now()))
+            logger.info("Feedback saved successfully")
+            return jsonify({"message": "Feedback saved successfully"}), 200
     except Exception as e:
         logger.error(f"Error saving feedback: {str(e)}")
         return jsonify({"error": "Failed to save feedback"}), 500
