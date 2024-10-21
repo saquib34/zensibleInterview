@@ -12,7 +12,7 @@ const IMDBAnalysisDashboard = () => {
   const [animateChart, setAnimateChart] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const Surl = 'http://13.233.91.141:5000';
+  const Surl = 'https://d30k3bvwkg3jcb.cloudfront.net';
 
 
   useEffect(() => {
